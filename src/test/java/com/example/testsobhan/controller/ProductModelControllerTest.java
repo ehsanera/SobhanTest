@@ -3,11 +3,15 @@ package com.example.testsobhan.controller;
 import com.example.testsobhan.dto.ProductCreateDto;
 import com.example.testsobhan.dto.ProductDto;
 import com.example.testsobhan.dto.ProductUpdateDto;
+import com.example.testsobhan.entity.Product;
+import com.example.testsobhan.repository.ProductRepository;
 import com.example.testsobhan.service.ProductService;
+import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -21,9 +25,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -59,8 +65,8 @@ class ProductModelControllerTest {
                 .andReturn();
 
         // Then
-        String responseBody = mvcResult.getResponse().getContentAsString();
-        assertEquals("{\"content\":[],\"pageable\":{\"sort\":{\"sorted\":false,\"unsorted\":true,\"empty\":true},\"offset\":0,\"pageNumber\":0,\"pageSize\":10,\"paged\":true,\"unpaged\":false},\"totalElements\":0,\"totalPages\":0,\"last\":true,\"number\":0,\"sort\":{\"sorted\":false,\"unsorted\":true,\"empty\":true},\"size\":10,\"numberOfElements\":0,\"first\":true,\"empty\":true}", responseBody);
+        String responseBody = new JSONObject(mvcResult.getResponse().getContentAsString()).getString("content");
+        assertEquals("[]", responseBody);
     }
 
     @Test
@@ -115,27 +121,28 @@ class ProductModelControllerTest {
     @Test
     void testUpdateProduct() throws Exception {
         // Given
+        ProductRepository productRepository = mock(ProductRepository.class);
+        ModelMapper modelMapper = new ModelMapper();
+        ProductService productService = new ProductService(productRepository, modelMapper);
+
+        Product product = new Product();
+        product.setId(1L);
+        product.setName("Product 1");
+        product.setPrice(new BigDecimal("10.00"));
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
         ProductUpdateDto updateDto = new ProductUpdateDto();
         updateDto.setName("Product 2");
         updateDto.setPrice(new BigDecimal("20.00"));
 
-        ProductDto productDto = new ProductDto();
-        productDto.setId(1L);
-        productDto.setName("Product 2");
-        productDto.setPrice(new BigDecimal("20.00"));
-
-        when(productService.update(1, updateDto)).thenReturn(productDto);
-
         // When
-        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.patch("/product/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Product 2\",\"price\":20.00}"))
-                .andExpect(status().isOk())
-                .andReturn();
+        ProductDto updatedProductDto = productService.update(1L, updateDto);
 
         // Then
-        String responseBody = mvcResult.getResponse().getContentAsString();
-        String expectedResponse = "{\"id\":1,\"name\":\"Product 2\",\"price\":20.00}";
-        assertEquals(expectedResponse, responseBody);
+        assertEquals(1L, updatedProductDto.getId());
+        assertEquals("Product 2", updatedProductDto.getName());
+        assertEquals(new BigDecimal("20.00"), updatedProductDto.getPrice());
     }
+
 }

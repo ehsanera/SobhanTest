@@ -6,7 +6,7 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableElasticsearchRepositories("com.example.testsobhan.repository.elastic")
+//@EnableElasticsearchRepositories("com.example.testsobhan.repository.elastic")
 @EnableScheduling
 public class TestSobhanApplication {
 

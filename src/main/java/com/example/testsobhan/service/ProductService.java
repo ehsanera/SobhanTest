@@ -63,9 +63,10 @@ public class ProductService {
         }
 
         modelMapper.map(updateDto, product);
+        productRepository.save(product);
 
         return modelMapper.map(
-                productRepository.save(product),
+                product,
                 ProductDto.class
         );
     }
